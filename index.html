@@ -430,15 +430,15 @@ const PAPERS = {
 };
 const DEFAULTS = {
   paper: 'A4', orient: 'portrait', unit: 'mm', customW: 200, customH: 200,
-  marginMode: 'all', margin: 10, marginX: 10, marginY: 10, marginT: 10, marginR: 10, marginB: 10, marginL: 10,
-  pattern: 'square', spacing: 5, majorEvery: 5, dotSize: 0.5, marginLine: true, marginAt: 30,
+  marginMode: 'all', margin: 0, marginX: 5, marginY: 5, marginT: 10, marginR: 10, marginB: 10, marginL: 10,
+  pattern: 'square', spacing: 2, majorEvery: 5, dotSize: 0.5, marginLine: true, marginAt: 30,
   snap: 'major', center: true, border: false,
   notes: false, notesPct: 30, notesSpacing: 8,
   logX: 0, logY: 3, polarStep: 15, polarMajor: 90, staffGap: 12,
   minorColor: '#e4e4e4', minorWeight: 0.1, majorColor: '#c4c4c4', majorWeight: 0.3,
-  axes: false, edgeLabels: false, origin: 'center', labelEvery: 0, labelScale: 1,
+  axes: true, edgeLabels: true, origin: 'center', labelEvery: 0, labelScale: 1,
   labelColor: '#8f8f8f', labelSize: 2.5, axisColor: '#8f8f8f', axisWeight: 0.5,
-  capTop: false, capBottom: false, capLeft: false, capRight: false, capText: '',
+  capTop: true, capBottom: true, capLeft: false, capRight: false, capText: '',
   calib: false, scaleX: 100, scaleY: 100, measN: 20, measKind: 'minor', measLen: 0, measAxis: 'h',
 };
 // Printer-specific settings: never saved into presets or share links.
