@@ -141,17 +141,13 @@
   /* Pinned footer */
   .foot { border-top: 1px solid var(--line); padding: 12px 16px 14px; background: var(--panel); }
   .actions { display: flex; gap: 8px; }
+  .actions + .actions { margin-top: 8px; }
   .actions button {
     flex: 1; font: inherit; font-weight: 600; padding: 9px 10px; border-radius: 7px; cursor: pointer;
     border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
   }
   .actions button.ghost { background: transparent; color: var(--accent); }
-  .links { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; font-size: 12px; }
-  .links button {
-    font: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer; color: var(--muted);
-    text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px;
-  }
-  .links button:hover { color: var(--accent); text-decoration-color: currentColor; }
+  .actions button.ghost:hover { background: var(--accent-soft); }
 
   .calc { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
 
@@ -410,10 +406,10 @@
   <div class="foot">
     <div class="actions">
       <button id="print" title="Set Scale to 100% and Margins to None or Default in the print dialog">Print</button>
-      <button id="download" class="ghost">Download SVG</button>
     </div>
-    <div class="links">
-      <button type="button" id="shareLink">Copy share link</button>
+    <div class="actions">
+      <button id="download" class="ghost">Download SVG</button>
+      <button type="button" id="shareLink" class="ghost" title="Copy a link that opens this exact setup">Share link</button>
     </div>
   </div>
 </aside>
@@ -1230,13 +1226,23 @@ function readHash() {
 $('#shareLink').addEventListener('click', async () => {
   const url = `${location.href.split('#')[0]}#${encodeSettings()}`;
   const btn = $('#shareLink');
+  let copied = false;
   try {
     await navigator.clipboard.writeText(url);
-    btn.textContent = 'Link copied ✓';
-    setTimeout(() => { btn.textContent = 'Copy share link'; }, 2000);
+    copied = true;
   } catch (e) {
-    window.prompt('Copy this link:', url);
+    // Older browsers, or the clipboard API blocked: fall back to a temporary text field.
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { copied = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
   }
+  if (!copied) { window.prompt('Copy this link:', url); return; }
+  btn.textContent = 'Link copied ✓';
+  setTimeout(() => { btn.textContent = 'Share link'; }, 2000);
 });
 
 // ---- Pattern tiles ----
