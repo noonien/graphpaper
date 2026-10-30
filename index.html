@@ -409,7 +409,7 @@
     </div>
     <div class="actions">
       <button id="download" class="ghost">Download SVG</button>
-      <button type="button" id="shareLink" class="ghost" title="Copy a link that opens this exact setup">Share link</button>
+      <button type="button" id="copyLink" class="ghost" title="Copy a link that opens this exact setup">Share link</button>
     </div>
   </div>
 </aside>
@@ -1223,9 +1223,9 @@ function readHash() {
   applyPreset(values);
   history.replaceState(null, '', location.pathname + location.search);
 }
-$('#shareLink').addEventListener('click', async () => {
+$('#copyLink').addEventListener('click', async () => {
   const url = `${location.href.split('#')[0]}#${encodeSettings()}`;
-  const btn = $('#shareLink');
+  const btn = $('#copyLink');
   let copied = false;
   try {
     await navigator.clipboard.writeText(url);
