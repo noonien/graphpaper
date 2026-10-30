@@ -318,14 +318,6 @@
             <label class="f"><span>Label every <span class="u" id="labelEveryUnit">cells</span></span><input type="number" min="0" step="1" data-key="labelEvery" title="0 = use the major interval"></label>
             <label class="f"><span>Value per <span id="labelScaleUnit">cell</span></span><input type="number" step="any" data-key="labelScale"></label>
           </div>
-          <div class="row">
-            <label class="f"><span>Text color</span><input type="color" data-key="labelColor"></label>
-            <label class="f"><span>Text size <span class="u">mm</span></span><input type="number" min="1" step="0.25" data-key="labelSize"></label>
-          </div>
-          <div class="row" data-show="square dots" data-if="axes">
-            <label class="f"><span>Axis color</span><input type="color" data-key="axisColor"></label>
-            <label class="f"><span>Axis weight <span class="u">mm</span></span><input type="number" min="0.05" step="0.05" data-key="axisWeight"></label>
-          </div>
           <p class="hint">Label every 0 = at each major line.</p>
         </div>
       </div>
@@ -349,17 +341,23 @@
     </details>
 
     <details class="sec" data-sec="style">
-      <summary><span class="t">Lines &amp; colors</span><span class="s" id="sum-style"></span></summary>
+      <summary><span class="t">Style</span><span class="s" id="sum-style"></span></summary>
       <div class="body">
         <div class="swatches" id="swatches"></div>
         <div class="row">
-          <label class="f"><span>Line color</span><input type="color" data-key="minorColor"></label>
-          <label class="f" data-show="square isometric ruled hex polar log staff"><span>Weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="minorWeight"></label>
-          <label class="f" data-show="dots isodots"><span>Dot size <span class="u">mm</span></span><input type="number" min="0.05" step="0.1" data-key="dotSize"></label>
+          <label class="f" title="Minor lines and dots"><span>Lines</span><input type="color" data-key="minorColor"></label>
+          <label class="f" title="Major lines and the border"><span>Major</span><input type="color" data-key="majorColor"></label>
+          <label class="f" data-show="square dots" title="Center axes"><span>Axes</span><input type="color" data-key="axisColor"></label>
+          <label class="f" title="Numbers and the description"><span>Text</span><input type="color" data-key="labelColor"></label>
         </div>
         <div class="row">
-          <label class="f"><span>Major / border color</span><input type="color" data-key="majorColor"></label>
-          <label class="f"><span>Weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="majorWeight"></label>
+          <label class="f" data-show="square isometric ruled hex polar log staff"><span>Line weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="minorWeight"></label>
+          <label class="f" data-show="dots isodots"><span>Dot size <span class="u">mm</span></span><input type="number" min="0.05" step="0.1" data-key="dotSize"></label>
+          <label class="f"><span>Major weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="majorWeight"></label>
+        </div>
+        <div class="row">
+          <label class="f" data-show="square dots"><span>Axis weight <span class="u">mm</span></span><input type="number" min="0.05" step="0.05" data-key="axisWeight"></label>
+          <label class="f"><span>Text size <span class="u">mm</span></span><input type="number" min="1" step="0.25" data-key="labelSize"></label>
         </div>
       </div>
     </details>
