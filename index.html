@@ -252,19 +252,28 @@
           <label class="f"><span>Width <span class="u"></span></span><input type="number" min="10" step="any" data-key="customW"></label>
           <label class="f"><span>Height <span class="u"></span></span><input type="number" min="10" step="any" data-key="customH"></label>
         </div>
-        <div class="row" data-if="marginLinked">
+        <div class="sublabel">Margins</div>
+        <div class="seg" style="margin-bottom:10px">
+          <label><input type="radio" name="marginMode" value="all" data-key="marginMode"><span>All sides</span></label>
+          <label><input type="radio" name="marginMode" value="axes" data-key="marginMode"><span>H &amp; V</span></label>
+          <label><input type="radio" name="marginMode" value="each" data-key="marginMode"><span>Each side</span></label>
+        </div>
+        <div class="row" data-if="marginAll">
           <label class="f"><span>Margin <span class="u"></span></span><input type="number" min="0" step="any" data-key="margin"></label>
           <div></div>
         </div>
-        <div class="row" data-if="!marginLinked">
+        <div class="row" data-if="marginAxes">
+          <label class="f"><span>Left &amp; right <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginX"></label>
+          <label class="f"><span>Top &amp; bottom <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginY"></label>
+        </div>
+        <div class="row" data-if="marginEach">
           <label class="f"><span>Top <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginT"></label>
           <label class="f"><span>Bottom <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginB"></label>
         </div>
-        <div class="row" data-if="!marginLinked">
+        <div class="row" data-if="marginEach">
           <label class="f"><span>Left <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginL"></label>
           <label class="f"><span>Right <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginR"></label>
         </div>
-        <label class="check"><input type="checkbox" data-key="marginLinked"> Same margin on all sides</label>
       </div>
     </details>
 
@@ -427,7 +436,7 @@ const PAPERS = {
 };
 const DEFAULTS = {
   paper: 'A4', orient: 'portrait', unit: 'mm', customW: 200, customH: 200,
-  marginLinked: true, margin: 10, marginT: 10, marginR: 10, marginB: 10, marginL: 10,
+  marginMode: 'all', margin: 10, marginX: 10, marginY: 10, marginT: 10, marginR: 10, marginB: 10, marginL: 10,
   pattern: 'square', spacing: 5, majorEvery: 5, dotSize: 0.5, marginLine: true, marginAt: 30,
   snap: 'major', center: true, border: false,
   notes: false, notesPct: 30, notesSpacing: 8,
@@ -479,7 +488,7 @@ const LOG_SUBS = (() => {
   for (let v = 5.5; v < 10; v += 1) out.push([v, 'minor']);
   return out.filter(([v]) => v < 10 - 1e-6);
 })();
-const LEN = new Set(['customW', 'customH', 'margin', 'marginT', 'marginR', 'marginB', 'marginL',
+const LEN = new Set(['customW', 'customH', 'margin', 'marginX', 'marginY', 'marginT', 'marginR', 'marginB', 'marginL',
   'spacing', 'marginAt', 'notesSpacing', 'staffGap', 'measLen']);
 const STORE = 'graphpaper-settings';
 const PRESET_STORE = 'graphpaper-presets';
@@ -492,7 +501,7 @@ let S = load();
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE));
-    if (saved) return { ...DEFAULTS, ...saved };
+    if (saved) return { ...DEFAULTS, ...migrate(saved) };
   } catch (e) {}
   return { ...DEFAULTS };
 }
@@ -501,6 +510,21 @@ function save() {
 }
 
 const unitFactor = () => (S.unit === 'in' ? 25.4 : 1);
+
+// Margins actually in use, as [top, right, bottom, left].
+function marginsOf(st) {
+  if (st.marginMode === 'axes') return [st.marginY, st.marginX, st.marginY, st.marginX];
+  if (st.marginMode === 'each') return [st.marginT, st.marginR, st.marginB, st.marginL];
+  return [st.margin, st.margin, st.margin, st.margin];
+}
+
+// Older saved settings and presets had a single "same margin on all sides" switch.
+function migrate(values) {
+  const v = { ...values };
+  if (v.marginMode === undefined && v.marginLinked === false) v.marginMode = 'each';
+  delete v.marginLinked;
+  return v;
+}
 const fmtLen = (mm) => `${+(mm / unitFactor()).toFixed(3)} ${S.unit}`;
 
 function syncInputs() {
@@ -532,6 +556,9 @@ function syncInputs() {
 }
 
 function flagValue(name) {
+  if (name === 'marginAll') return S.marginMode === 'all';
+  if (name === 'marginAxes') return S.marginMode === 'axes';
+  if (name === 'marginEach') return S.marginMode === 'each';
   if (name === 'labelsOn') return S.edgeLabels || (S.axes && (S.pattern === 'square' || S.pattern === 'dots'));
   return !!S[name];
 }
@@ -549,7 +576,8 @@ function summarize() {
   $('#sum-presets').textContent = saved ? `${saved} saved` : '';
 
   const size = S.paper === 'Custom' ? `${len(S.customW)} × ${len(S.customH)}` : S.paper;
-  const margin = S.marginLinked ? `${len(S.margin)} margins` : 'custom margins';
+  const margin = S.marginMode === 'axes' ? `${len(S.marginX)} L/R, ${len(S.marginY)} T/B margins`
+    : S.marginMode === 'each' ? 'custom margins' : `${len(S.margin)} margins`;
   $('#sum-paper').textContent = `${size} · ${S.orient === 'portrait' ? 'Portrait' : 'Landscape'} · ${margin}`;
 
   const layout = [];
@@ -588,7 +616,7 @@ function build() {
   const [W, H] = pageSize();
   const [kx, ky] = correction();
   const sp = Math.max(0.5, S.spacing);
-  const margins = S.marginLinked ? [S.margin, S.margin, S.margin, S.margin] : [S.marginT, S.marginR, S.marginB, S.marginL];
+  const margins = marginsOf(S);
   let [mt, mr, mb, ml] = margins.map((v) => Math.max(0, +v || 0));
   // Everything below is laid out in real printed millimetres, then enlarged by the correction
   // around the page center. When enlarging, only the middle 1/k of the page stays on the sheet,
@@ -998,8 +1026,14 @@ document.addEventListener('input', (e) => {
     if (!isFinite(v)) return;
     if (LEN.has(k)) v *= unitFactor();
   } else v = el.value;
+  if (k === 'marginMode') {
+    // Carry the margins in use over to the new mode, so switching doesn't move the grid.
+    const [t, r, b, l] = marginsOf(S);
+    if (v === 'all') S.margin = t;
+    if (v === 'axes') { S.marginX = l; S.marginY = t; }
+    if (v === 'each') Object.assign(S, { marginT: t, marginR: r, marginB: b, marginL: l });
+  }
   S[k] = v;
-  if (k === 'marginLinked' && !v) S.marginT = S.marginR = S.marginB = S.marginL = S.margin;
   // Re-sync on anything but typing in a text or number field, which would fight the cursor.
   if (el.type !== 'number' && el.type !== 'text') syncInputs();
   render();
@@ -1015,7 +1049,7 @@ function presetValues() {
 function applyPreset(values) {
   const keep = {};
   CALIB_KEYS.forEach((k) => { keep[k] = S[k]; });
-  S = { ...S, ...values, ...keep };
+  S = { ...S, ...migrate(values), ...keep };
   update();
 }
 
@@ -1083,7 +1117,7 @@ const LINK_VERSION = 1;
 const CHOICES = {
   paper: [...Object.keys(PAPERS), 'Custom'], orient: ['portrait', 'landscape'], unit: ['mm', 'in'],
   pattern: ['square', 'dots', 'isometric', 'isodots', 'hex', 'polar', 'log', 'ruled', 'staff'],
-  snap: ['major', 'cells', 'off'], origin: ['center', 'bl', 'tl'],
+  snap: ['major', 'cells', 'off'], origin: ['center', 'bl', 'tl'], marginMode: ['all', 'axes', 'each'],
 };
 const LINK_FIELDS = [
   'theme', 'paper', 'orient', 'unit', 'customW', 'customH',
@@ -1095,10 +1129,12 @@ const LINK_FIELDS = [
   'axes', 'edgeLabels', 'origin', 'labelEvery', 'labelScale',
   'labelColor', 'labelSize', 'axisColor', 'axisWeight',
   'capTop', 'capBottom', 'capLeft', 'capRight', 'capText',
+  'marginMode', 'marginX', 'marginY',
 ];
 const THEME_KEYS = ['minorColor', 'majorColor', 'axisColor', 'labelColor'];
 const fieldType = (k) => {
   if (k === 'theme') return 'theme';
+  if (k === 'marginLinked') return 'legacy';  // old links only: present meant margins set per side
   if (CHOICES[k]) return 'choice';
   const d = DEFAULTS[k];
   if (typeof d === 'boolean') return 'bool';
@@ -1114,6 +1150,7 @@ function encodeSettings() {
   const theme = currentTheme();
   LINK_FIELDS.forEach((k, idx) => {
     const type = fieldType(k);
+    if (type === 'legacy') return;
     if (type === 'theme') {
       if (theme && !THEME_KEYS.every((c) => S[c] === DEFAULTS[c])) { out.push(idx); varint(THEMES.indexOf(theme)); }
       return;
@@ -1157,7 +1194,9 @@ function decodeSettings(str) {
     const k = LINK_FIELDS[next()];
     if (!k) throw new Error('unknown field');
     const type = fieldType(k);
-    if (type === 'theme') {
+    if (type === 'legacy') {
+      values.marginMode = 'each';
+    } else if (type === 'theme') {
       const theme = THEMES[varint()];
       if (theme) THEME_KEYS.forEach((c, i) => { values[c] = theme[i + 1]; });
     } else if (type === 'choice') {
