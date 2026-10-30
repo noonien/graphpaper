@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graph Paper</title>
+<style id="page-style"></style>
+<style>
+  :root {
+    --bg: #e9e7e1;
+    --panel: #faf9f6;
+    --ink: #1f1f1d;
+    --muted: #6d6c67;
+    --line: #dad7ce;
+    --field: #ffffff;
+    --hover: #f0eee8;
+    --accent: #2f6fd6;
+    --accent-soft: rgba(47, 111, 214, 0.1);
+    --accent-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18191b;
+      --panel: #222326;
+      --ink: #ebebe8;
+      --muted: #9a9994;
+      --line: #36373b;
+      --field: #1a1b1d;
+      --hover: #2a2b2f;
+      --accent: #6c9ef0;
+      --accent-soft: rgba(108, 158, 240, 0.14);
+      --accent-ink: #0f1115;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+  }
+  aside {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; min-height: 0; height: 100vh;
+  }
+  .scroll { flex: 1; overflow-y: auto; padding: 16px 16px 8px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  header .seg { width: 92px; }
+
+  /* Pattern tiles */
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+  .tiles label { cursor: pointer; }
+  .tiles input { position: absolute; opacity: 0; pointer-events: none; }
+  .tiles span {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 6px;
+    font-size: 11.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; background: var(--field);
+  }
+  .tiles svg { width: 30px; height: 30px; color: var(--ink); opacity: 0.55; }
+  .tiles label:hover span { border-color: var(--accent); }
+  .tiles input:checked + span { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tiles input:checked + span svg { color: var(--accent); opacity: 1; }
+  .tiles input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Collapsible sections */
+  details.sec { border-top: 1px solid var(--line); }
+  details.sec > summary {
+    list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px;
+    padding: 11px 2px; user-select: none;
+  }
+  details.sec > summary::-webkit-details-marker { display: none; }
+  details.sec > summary::before {
+    content: ""; width: 6px; height: 6px; flex: none; align-self: center;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(-45deg); transition: transform .15s; margin-right: 2px;
+  }
+  details.sec[open] > summary::before { transform: rotate(45deg); }
+  details.sec > summary:hover .t { color: var(--accent); }
+  summary .t { font-weight: 600; font-size: 13px; }
+  summary .s {
+    margin-left: auto; color: var(--muted); font-size: 12px; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  details.sec > .body { padding: 2px 0 10px; }
+
+  .sublabel { font-size: 12px; color: var(--muted); margin: 4px 0 6px; }
+  .row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
+  .row > * { flex: 1; min-width: 0; }
+  .row > button { flex: 0 0 auto; }
+  label.f { display: block; font-size: 12px; color: var(--muted); }
+  label.f > span { display: block; margin-bottom: 3px; }
+  label.f .u { color: var(--muted); opacity: 0.8; }
+  input[type=number], input[type=text], select {
+    width: 100%; padding: 6px 8px; font: inherit; color: var(--ink);
+    background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+  }
+  input[type=color] {
+    width: 100%; height: 32px; padding: 2px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--field); cursor: pointer;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg label { flex: 1; text-align: center; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: block; padding: 5px 4px; font-size: 13px; }
+  .seg label + label span { border-left: 1px solid var(--line); }
+  .seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .check { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .presets button, .chip {
+    font: inherit; font-size: 12px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
+    background: var(--field); color: var(--ink); border: 1px solid var(--line);
+  }
+  .presets button:hover, .chip:hover { border-color: var(--accent); }
+  .chip { display: inline-flex; align-items: center; gap: 2px; padding: 0 2px 0 0; }
+  .chip button { border: 0; background: none; padding: 4px 4px 4px 9px; }
+  .chip button.x { padding: 4px 6px; color: var(--muted); font-size: 13px; line-height: 1; }
+  .chip button.x:hover { color: var(--ink); }
+  .empty { font-size: 12px; color: var(--muted); }
+  button.small {
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    background: var(--field); color: var(--ink); border: 1px solid var(--line);
+  }
+  button.small:hover { border-color: var(--accent); }
+  .swatches { display: flex; gap: 6px; margin-bottom: 12px; }
+  .swatches button {
+    width: 28px; height: 28px; padding: 0; border-radius: 50%; cursor: pointer; flex: none;
+    border: 1px solid rgba(0,0,0,.15); outline-offset: 2px;
+  }
+  .swatches button:hover { transform: scale(1.08); }
+  .swatches button[aria-pressed=true] { outline: 2px solid var(--accent); }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+  .msg { font-size: 12px; margin: 0 0 10px; color: var(--accent); }
+  [hidden] { display: none !important; }
+
+  /* Pinned footer */
+  .foot { border-top: 1px solid var(--line); padding: 12px 16px 14px; background: var(--panel); }
+  .actions { display: flex; gap: 8px; }
+  .actions button {
+    flex: 1; font: inherit; font-weight: 600; padding: 9px 10px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  }
+  .actions button.ghost { background: transparent; color: var(--accent); }
+  .links { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; font-size: 12px; }
+  .links button {
+    font: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer; color: var(--muted);
+    text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px;
+  }
+  .links button:hover { color: var(--accent); text-decoration-color: currentColor; }
+
+  .calc { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+
+  main {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 24px 16px; overflow: hidden; min-height: 0; height: 100vh;
+  }
+  .zoombar { align-self: flex-end; display: flex; gap: 4px; margin-bottom: 10px; }
+  .zoombar button {
+    font: inherit; font-size: 13px; min-width: 34px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line); font-variant-numeric: tabular-nums;
+  }
+  .zoombar button:hover { border-color: var(--accent); }
+  #stage { flex: 1; width: 100%; min-height: 0; display: flex; overflow: auto; }
+  #sheet { margin: auto; }
+  #sheet svg { display: block; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 8px 28px rgba(0,0,0,.16); }
+  #info { color: var(--muted); font-size: 12px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; height: auto; }
+    aside { height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .scroll { overflow: visible; }
+    main { padding: 12px 16px 16px; height: 80vh; }
+  }
+
+  @media print {
+    html, body { background: #fff; height: auto; display: block; }
+    aside, #info, .zoombar { display: none !important; }
+    main, #stage { display: block; padding: 0; margin: 0; overflow: visible; height: auto; }
+    #sheet { margin: 0; }
+    #sheet svg { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <div class="scroll">
+    <header>
+      <h1>Graph Paper</h1>
+      <div class="seg" title="Units">
+        <label><input type="radio" name="unit" value="mm" data-key="unit"><span>mm</span></label>
+        <label><input type="radio" name="unit" value="in" data-key="unit"><span>in</span></label>
+      </div>
+    </header>
+
+    <div class="tiles" id="tiles" role="radiogroup" aria-label="Pattern"></div>
+
+    <!-- Main settings for the chosen pattern -->
+    <div class="row" data-show="log">
+      <label class="f"><span>Horizontal cycles</span><input type="number" min="0" max="10" step="1" data-key="logX"></label>
+      <label class="f"><span>Vertical cycles</span><input type="number" min="0" max="10" step="1" data-key="logY"></label>
+    </div>
+    <p class="hint" data-show="log">0 cycles = linear axis, using the spacing below.</p>
+    <div class="row">
+      <label class="f"><span><span id="spacingLabel">Spacing</span> <span class="u"></span></span><input type="number" min="0.5" step="any" data-key="spacing"></label>
+      <label class="f" data-show="square dots isometric log"><span>Major every <span class="u">cells</span></span><input type="number" min="0" step="1" data-key="majorEvery"></label>
+      <label class="f" data-show="polar"><span>Major every <span class="u">rings</span></span><input type="number" min="0" step="1" data-key="majorEvery"></label>
+      <label class="f" data-show="staff"><span>Gap between staves <span class="u"></span></span><input type="number" min="0" step="any" data-key="staffGap"></label>
+      <label class="f" data-show="ruled" data-if="marginLine"><span>Margin line at <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginAt"></label>
+      <div data-show="isodots hex"></div>
+    </div>
+    <div class="row" data-show="polar">
+      <label class="f"><span>Ray every <span class="u">°</span></span><input type="number" min="1" max="90" step="any" data-key="polarStep"></label>
+      <label class="f"><span>Major ray every <span class="u">°</span></span><input type="number" min="0" step="any" data-key="polarMajor"></label>
+    </div>
+    <label class="check" data-show="ruled"><input type="checkbox" data-key="marginLine"> Red margin line</label>
+
+    <details class="sec" data-sec="presets">
+      <summary><span class="t">Presets</span><span class="s" id="sum-presets"></span></summary>
+      <div class="body">
+        <div class="presets" id="presets"></div>
+        <div class="sublabel">My presets</div>
+        <div class="presets" id="userPresets"></div>
+        <div class="row">
+          <input type="text" id="presetName" placeholder="Name this setup" maxlength="40">
+          <button type="button" class="small" id="savePreset">Save</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="paper">
+      <summary><span class="t">Paper</span><span class="s" id="sum-paper"></span></summary>
+      <div class="body">
+        <div class="row">
+          <label class="f"><span>Size</span>
+            <select data-key="paper">
+              <option>A5</option><option>A4</option><option>A3</option>
+              <option>Letter</option><option>Legal</option><option>Tabloid</option>
+              <option>Custom</option>
+            </select>
+          </label>
+          <div class="seg">
+            <label><input type="radio" name="orient" value="portrait" data-key="orient"><span>Portrait</span></label>
+            <label><input type="radio" name="orient" value="landscape" data-key="orient"><span>Landscape</span></label>
+          </div>
+        </div>
+        <div class="row" id="customDims">
+          <label class="f"><span>Width <span class="u"></span></span><input type="number" min="10" step="any" data-key="customW"></label>
+          <label class="f"><span>Height <span class="u"></span></span><input type="number" min="10" step="any" data-key="customH"></label>
+        </div>
+        <div class="row" data-if="marginLinked">
+          <label class="f"><span>Margin <span class="u"></span></span><input type="number" min="0" step="any" data-key="margin"></label>
+          <div></div>
+        </div>
+        <div class="row" data-if="!marginLinked">
+          <label class="f"><span>Top <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginT"></label>
+          <label class="f"><span>Bottom <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginB"></label>
+        </div>
+        <div class="row" data-if="!marginLinked">
+          <label class="f"><span>Left <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginL"></label>
+          <label class="f"><span>Right <span class="u"></span></span><input type="number" min="0" step="any" data-key="marginR"></label>
+        </div>
+        <label class="check"><input type="checkbox" data-key="marginLinked"> Same margin on all sides</label>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="layout">
+      <summary><span class="t">Layout</span><span class="s" id="sum-layout"></span></summary>
+      <div class="body">
+        <div class="row" data-show="square dots">
+          <label class="f"><span>Fit</span>
+            <select data-key="snap">
+              <option value="major">Whole major cells, centered</option>
+              <option value="cells">Whole cells, centered</option>
+              <option value="off">Fill to margins</option>
+            </select>
+          </label>
+        </div>
+        <label class="check" data-show="ruled"><input type="checkbox" data-key="center"> Center lines vertically</label>
+        <label class="check" data-show="staff"><input type="checkbox" data-key="center"> Center staves vertically</label>
+        <label class="check" data-show="isometric isodots hex"><input type="checkbox" data-key="center"> Center pattern on page</label>
+        <label class="check" data-show="square dots"><input type="checkbox" data-key="notes"> Ruled notes area below</label>
+        <div class="row" data-show="square dots" data-if="notes">
+          <label class="f"><span>Notes height <span class="u">%</span></span><input type="number" min="5" max="90" step="1" data-key="notesPct"></label>
+          <label class="f"><span>Line spacing <span class="u"></span></span><input type="number" min="1" step="any" data-key="notesSpacing"></label>
+        </div>
+        <label class="check"><input type="checkbox" data-key="border"> Border around grid</label>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="labels" data-show="square dots polar log">
+      <summary><span class="t">Labels</span><span class="s" id="sum-labels"></span></summary>
+      <div class="body">
+        <label class="check" data-show="square dots"><input type="checkbox" data-key="axes"> Center axes</label>
+        <label class="check" data-show="square dots"><input type="checkbox" data-key="edgeLabels"> Numbers on all four sides</label>
+        <label class="check" data-show="log"><input type="checkbox" data-key="edgeLabels"> Numbers along bottom and left</label>
+        <label class="check" data-show="polar"><input type="checkbox" data-key="edgeLabels"> Angle and radius numbers</label>
+        <div data-if="labelsOn">
+          <div class="row" data-show="square dots" data-if="edgeLabels">
+            <label class="f"><span>Side numbers count from</span>
+              <select data-key="origin">
+                <option value="center">Center</option>
+                <option value="bl">Bottom-left corner</option>
+                <option value="tl">Top-left corner</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Label every <span class="u" id="labelEveryUnit">cells</span></span><input type="number" min="0" step="1" data-key="labelEvery" title="0 = use the major interval"></label>
+            <label class="f"><span>Value per <span id="labelScaleUnit">cell</span></span><input type="number" step="any" data-key="labelScale"></label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Text color</span><input type="color" data-key="labelColor"></label>
+            <label class="f"><span>Text size <span class="u">mm</span></span><input type="number" min="1" step="0.25" data-key="labelSize"></label>
+          </div>
+          <div class="row" data-show="square dots" data-if="axes">
+            <label class="f"><span>Axis color</span><input type="color" data-key="axisColor"></label>
+            <label class="f"><span>Axis weight <span class="u">mm</span></span><input type="number" min="0.05" step="0.05" data-key="axisWeight"></label>
+          </div>
+          <p class="hint">Label every 0 = at each major line.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="caption">
+      <summary><span class="t">Description</span><span class="s" id="sum-caption"></span></summary>
+      <div class="body">
+        <p class="hint">Prints what's on the page (pattern, spacing, cell count) just outside the grid, on the sides you pick.</p>
+        <div class="seg" style="margin-bottom:10px">
+          <label><input type="checkbox" data-key="capTop"><span>Top</span></label>
+          <label><input type="checkbox" data-key="capBottom"><span>Bottom</span></label>
+          <label><input type="checkbox" data-key="capLeft"><span>Left</span></label>
+          <label><input type="checkbox" data-key="capRight"><span>Right</span></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Extra text (optional)</span><input type="text" data-key="capText" maxlength="120" placeholder="e.g. name, class, date"></label>
+        </div>
+        <p class="hint" id="capPreview"></p>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="style">
+      <summary><span class="t">Lines &amp; colors</span><span class="s" id="sum-style"></span></summary>
+      <div class="body">
+        <div class="swatches" id="swatches"></div>
+        <div class="row">
+          <label class="f"><span>Line color</span><input type="color" data-key="minorColor"></label>
+          <label class="f" data-show="square isometric ruled hex polar log staff"><span>Weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="minorWeight"></label>
+          <label class="f" data-show="dots isodots"><span>Dot size <span class="u">mm</span></span><input type="number" min="0.05" step="0.1" data-key="dotSize"></label>
+        </div>
+        <div class="row">
+          <label class="f"><span>Major / border color</span><input type="color" data-key="majorColor"></label>
+          <label class="f"><span>Weight <span class="u">mm</span></span><input type="number" min="0.01" step="0.05" data-key="majorWeight"></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="calib">
+      <summary><span class="t">Printer calibration</span><span class="s" id="sum-calib"></span></summary>
+      <div class="body">
+        <p class="hint">Many printers shrink pages slightly even at 100% scale. Tell the tool how yours prints and it will compensate, refitting the grid inside your margins.</p>
+        <label class="check"><input type="checkbox" data-key="calib"> Correct for printer scaling</label>
+        <div class="row" data-if="calib">
+          <label class="f"><span>Horizontal <span class="u">%</span></span><input type="number" min="50" max="150" step="0.1" data-key="scaleX"></label>
+          <label class="f"><span>Vertical <span class="u">%</span></span><input type="number" min="50" max="150" step="0.1" data-key="scaleY"></label>
+        </div>
+        <p class="hint" data-if="calib">Printed size as a % of intended: if 100 mm comes out as 98.5 mm, enter 98.5.</p>
+        <div class="calc">
+          <div class="sublabel" style="margin-top:0">Or measure a printed page</div>
+          <p class="hint">Print a square or dot grid with the current settings, then measure a run of boxes with a ruler.</p>
+          <div class="row">
+            <label class="f"><span>Number of boxes</span><input type="number" min="1" step="1" data-key="measN"></label>
+            <label class="f"><span>Box type</span>
+              <select data-key="measKind">
+                <option value="minor">Minor</option>
+                <option value="major">Major</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <label class="f"><span>Measured length <span class="u"></span></span><input type="number" min="0" step="any" data-key="measLen"></label>
+            <label class="f"><span>Direction</span>
+              <select data-key="measAxis">
+                <option value="h">Horizontal</option>
+                <option value="v">Vertical</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          </div>
+          <div class="row"><button type="button" class="small" id="calcScale">Calculate &amp; apply</button></div>
+          <p class="msg" id="calcMsg"></p>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="foot">
+    <div class="actions">
+      <button id="print" title="Set Scale to 100% and Margins to None or Default in the print dialog">Print</button>
+      <button id="download" class="ghost">Download SVG</button>
+    </div>
+    <div class="links">
+      <button type="button" id="shareLink">Copy share link</button>
+    </div>
+  </div>
+</aside>
+
+
+<main>
+  <div class="zoombar">
+    <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+    <button type="button" data-zoom="fit" id="zoomLabel" title="Fit page">Fit</button>
+    <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+  </div>
+  <div id="stage"><div id="sheet"></div></div>
+  <div id="info"></div>
+</main>
+
+<script>
+const PAPERS = {
+  A5: [148, 210], A4: [210, 297], A3: [297, 420],
+  Letter: [215.9, 279.4], Legal: [215.9, 355.6], Tabloid: [279.4, 431.8],
+};
+const DEFAULTS = {
+  paper: 'A4', orient: 'portrait', unit: 'mm', customW: 200, customH: 200,
+  marginLinked: true, margin: 10, marginT: 10, marginR: 10, marginB: 10, marginL: 10,
+  pattern: 'square', spacing: 5, majorEvery: 5, dotSize: 0.5, marginLine: true, marginAt: 30,
+  snap: 'major', center: true, border: false,
+  notes: false, notesPct: 30, notesSpacing: 8,
+  logX: 0, logY: 3, polarStep: 15, polarMajor: 90, staffGap: 12,
+  minorColor: '#a8c6e6', minorWeight: 0.1, majorColor: '#5a8ccc', majorWeight: 0.3,
+  axes: false, edgeLabels: false, origin: 'center', labelEvery: 0, labelScale: 1,
+  labelColor: '#2f5a94', labelSize: 2.5, axisColor: '#2b5590', axisWeight: 0.5,
+  capTop: false, capBottom: false, capLeft: false, capRight: false, capText: '',
+  calib: false, scaleX: 100, scaleY: 100, measN: 20, measKind: 'minor', measLen: 0, measAxis: 'h',
+};
+// Printer-specific settings: never saved into presets or share links.
+const CALIB_KEYS = ['calib', 'scaleX', 'scaleY', 'measN', 'measKind', 'measLen', 'measAxis'];
+const PRESETS = [
+  ['5 mm grid', { pattern: 'square', unit: 'mm', spacing: 5, majorEvery: 0 }],
+  ['Engineering', { pattern: 'square', unit: 'mm', spacing: 1, majorEvery: 10, minorWeight: 0.05, majorWeight: 0.25 }],
+  ['¼ inch', { pattern: 'square', unit: 'in', spacing: 6.35, majorEvery: 4 }],
+  ['Coordinate plane', { pattern: 'square', unit: 'mm', spacing: 5, majorEvery: 5, snap: 'major', axes: true, edgeLabels: true, labelEvery: 0 }],
+  ['Dot 5 mm', { pattern: 'dots', unit: 'mm', spacing: 5, majorEvery: 0, dotSize: 0.5 }],
+  ['Isometric', { pattern: 'isometric', unit: 'mm', spacing: 5, majorEvery: 0 }],
+  ['Iso dots', { pattern: 'isodots', unit: 'mm', spacing: 5, dotSize: 0.5 }],
+  ['Hex', { pattern: 'hex', unit: 'mm', spacing: 5 }],
+  ['Polar', { pattern: 'polar', unit: 'mm', spacing: 5, majorEvery: 5, polarStep: 15, polarMajor: 90, edgeLabels: true }],
+  ['Semi-log', { pattern: 'log', unit: 'mm', logX: 0, logY: 3, spacing: 5, majorEvery: 5, edgeLabels: true }],
+  ['Log-log', { pattern: 'log', unit: 'mm', logX: 3, logY: 3, edgeLabels: true }],
+  ['College ruled', { pattern: 'ruled', unit: 'in', spacing: 7.14375, marginLine: true, marginAt: 32 }],
+  ['Music staff', { pattern: 'staff', unit: 'mm', spacing: 2, staffGap: 12, center: true }],
+];
+// [name, minor, major, axis, label]
+const THEMES = [
+  ['Blue', '#a8c6e6', '#5a8ccc', '#2b5590', '#2f5a94'],
+  ['Green', '#b5dbb8', '#6aae72', '#2f6b3a', '#2f6b3a'],
+  ['Orange', '#f3cf9e', '#e09a3e', '#9a5b12', '#9a5b12'],
+  ['Red', '#f0b8b0', '#d9776a', '#a8322a', '#a8322a'],
+  ['Purple', '#d2c2ea', '#9b7fd0', '#5b3a96', '#5b3a96'],
+  ['Gray', '#cfcfcf', '#8f8f8f', '#404040', '#4a4a4a'],
+  ['Faint', '#e4e4e4', '#c2c2c2', '#8a8a8a', '#8a8a8a'],
+  ['Black', '#a0a0a0', '#3a3a3a', '#000000', '#111111'],
+];
+const SPACING_LABELS = {
+  square: 'Spacing', dots: 'Spacing', isometric: 'Triangle side', isodots: 'Dot spacing',
+  hex: 'Side length', polar: 'Ring spacing', log: 'Linear spacing', ruled: 'Line spacing', staff: 'Staff line spacing',
+};
+// Log-paper subdivisions within one cycle: [value, tier].
+const LOG_SUBS = (() => {
+  const out = [[1, 'major']];
+  for (let i = 1; i <= 9; i++) out.push([1 + i / 10, 'minor']);
+  for (let i = 2; i <= 9; i++) out.push([i, 'mid']);
+  for (let v = 2.2; v < 4.9; v += 0.2) if (Math.abs(v - Math.round(v)) > 1e-6) out.push([v, 'minor']);
+  for (let v = 5.5; v < 10; v += 1) out.push([v, 'minor']);
+  return out.filter(([v]) => v < 10 - 1e-6);
+})();
+const LEN = new Set(['customW', 'customH', 'margin', 'marginT', 'marginR', 'marginB', 'marginL',
+  'spacing', 'marginAt', 'notesSpacing', 'staffGap', 'measLen']);
+const STORE = 'graphpaper-settings';
+const PRESET_STORE = 'graphpaper-presets';
+
+const $ = (s) => document.querySelector(s);
+const f = (n) => +n.toFixed(3);
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, +v || 0));
+let S = load();
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE));
+    if (saved) return { ...DEFAULTS, ...saved };
+  } catch (e) {}
+  return { ...DEFAULTS };
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {}
+}
+
+const unitFactor = () => (S.unit === 'in' ? 25.4 : 1);
+const fmtLen = (mm) => `${+(mm / unitFactor()).toFixed(3)} ${S.unit}`;
+
+function syncInputs() {
+  document.querySelectorAll('[data-key]').forEach((el) => {
+    const k = el.dataset.key, v = S[k];
+    if (el.type === 'checkbox') el.checked = !!v;
+    else if (el.type === 'radio') el.checked = el.value === v;
+    else if (LEN.has(k)) el.value = +(v / unitFactor()).toFixed(4);
+    else el.value = v;
+  });
+  document.querySelectorAll('.u:empty, .u[data-len]').forEach((e) => {
+    e.dataset.len = 1;
+    e.textContent = S.unit;
+  });
+  document.querySelectorAll('[data-show], [data-if]').forEach((e) => {
+    const pat = !e.dataset.show || e.dataset.show.split(' ').includes(S.pattern);
+    const cond = e.dataset.if || '';
+    const flag = cond.startsWith('!') ? !flagValue(cond.slice(1)) : cond ? flagValue(cond) : true;
+    e.hidden = !(pat && flag);
+  });
+  $('#customDims').hidden = S.paper !== 'Custom';
+  document.querySelectorAll('#swatches button').forEach((b, i) => {
+    b.setAttribute('aria-pressed', THEMES[i] === currentTheme());
+  });
+  $('#spacingLabel').textContent = SPACING_LABELS[S.pattern];
+  $('#labelEveryUnit').textContent = S.pattern === 'polar' ? 'rings' : 'cells';
+  $('#labelScaleUnit').textContent = S.pattern === 'polar' ? 'ring' : 'cell';
+  summarize();
+}
+
+function flagValue(name) {
+  if (name === 'labelsOn') return S.edgeLabels || (S.axes && (S.pattern === 'square' || S.pattern === 'dots'));
+  return !!S[name];
+}
+
+function currentTheme() {
+  return THEMES.find(([, minor, major, axis, label]) =>
+    S.minorColor === minor && S.majorColor === major && S.axisColor === axis && S.labelColor === label);
+}
+
+// One-line summaries shown on collapsed sections.
+function summarize() {
+  const len = fmtLen;
+  const grid = S.pattern === 'square' || S.pattern === 'dots';
+  const saved = loadUserPresets().length;
+  $('#sum-presets').textContent = saved ? `${saved} saved` : '';
+
+  const size = S.paper === 'Custom' ? `${len(S.customW)} × ${len(S.customH)}` : S.paper;
+  const margin = S.marginLinked ? `${len(S.margin)} margins` : 'custom margins';
+  $('#sum-paper').textContent = `${size} · ${S.orient === 'portrait' ? 'Portrait' : 'Landscape'} · ${margin}`;
+
+  const layout = [];
+  if (grid) layout.push({ major: 'Whole major cells', cells: 'Whole cells', off: 'Fill to margins' }[S.snap]);
+  else if (['ruled', 'staff', 'isometric', 'isodots', 'hex'].includes(S.pattern)) layout.push(S.center ? 'Centered' : 'From top-left');
+  else layout.push('Centered');
+  if (grid && S.notes) layout.push('notes');
+  if (S.border) layout.push('border');
+  $('#sum-layout').textContent = layout.join(' · ');
+
+  let labels = S.edgeLabels ? 'On' : 'Off';
+  if (grid) labels = S.axes && S.edgeLabels ? 'Axes + sides' : S.axes ? 'Axes' : S.edgeLabels ? 'Sides' : 'Off';
+  $('#sum-labels').textContent = labels;
+
+  const theme = currentTheme();
+  $('#sum-style').textContent = theme ? theme[0] : 'Custom';
+  const sides = [['capTop', 'Top'], ['capBottom', 'Bottom'], ['capLeft', 'Left'], ['capRight', 'Right']]
+    .filter(([k]) => S[k]).map(([, name]) => name);
+  $('#sum-caption').textContent = sides.length ? sides.join(', ') : 'Off';
+  $('#sum-calib').textContent = S.calib ? `${+S.scaleX}% × ${+S.scaleY}%` : 'Off';
+}
+
+function pageSize() {
+  let [w, h] = S.paper === 'Custom' ? [S.customW, S.customH] : PAPERS[S.paper];
+  if ((S.orient === 'landscape') !== (w > h)) [w, h] = [h, w];
+  return [w, h];
+}
+
+// Correction factors that undo the printer's scaling (1 = none).
+function correction() {
+  if (!S.calib) return [1, 1];
+  return [100 / clamp(S.scaleX, 50, 150), 100 / clamp(S.scaleY, 50, 150)];
+}
+
+function build() {
+  const [W, H] = pageSize();
+  const [kx, ky] = correction();
+  const sp = Math.max(0.5, S.spacing);
+  const margins = S.marginLinked ? [S.margin, S.margin, S.margin, S.margin] : [S.marginT, S.marginR, S.marginB, S.marginL];
+  let [mt, mr, mb, ml] = margins.map((v) => Math.max(0, +v || 0));
+  // Everything below is laid out in real printed millimetres, then enlarged by the correction
+  // around the page center. When enlarging, only the middle 1/k of the page stays on the sheet,
+  // so the margins grow to keep the fitted grid inside it.
+  const minMx = kx > 1 ? (W - W / kx) / 2 : 0, minMy = ky > 1 ? (H - H / ky) / 2 : 0;
+  mt = Math.max(mt, minMy); mb = Math.max(mb, minMy);
+  ml = Math.max(ml, minMx); mr = Math.max(mr, minMx);
+  let x0 = Math.min(ml, W - sp), y0 = Math.min(mt, H - sp);
+  let w = Math.max(sp, W - x0 - mr), h = Math.max(sp, H - y0 - mb);
+  const N = Math.max(0, Math.round(S.majorEvery) || 0);
+  const isMajor = (i) => N > 0 && Math.abs(i) % N === 0;
+  let minor = '', mid = '', major = '', extra = '', labels = '', info = '', clip = false;
+  const pat = S.pattern;
+  const fs = Math.max(0.5, S.labelSize);
+  const pad = fs * 0.35;   // gap between a label and the line/edge it labels
+  const below = pad + fs * 0.72;
+  const text = (x, y, s, anchor) => {
+    labels += `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor}">${s}</text>`;
+  };
+  const fmt = (n) => String(+Math.abs(n * (+S.labelScale || 1)).toFixed(6));
+  const labelStep = Math.max(1, Math.round(S.labelEvery) || N || 5);
+  // Description strips are reserved inside the margins, so the grid refits around them.
+  const capH = fs * 1.7;
+  if (S.capTop) { y0 += capH; h -= capH; }
+  if (S.capBottom) h -= capH;
+  if (S.capLeft) { x0 += capH; w -= capH; }
+  if (S.capRight) w -= capH;
+  w = Math.max(sp, w); h = Math.max(sp, h);
+  const len = fmtLen;
+  const desc = [];        // parts of the printed description
+  let boxBottom = null;   // bottom of everything drawn, when it extends below the grid (notes area)
+
+  if (pat === 'square' || pat === 'dots') {
+    const labeled = S.axes || S.edgeLabels;
+    const fromCenter = S.axes || (S.edgeLabels && S.origin === 'center');
+    let notesH = 0;
+    const areaBottom = y0 + h;
+    if (S.notes) {
+      notesH = h * clamp(S.notesPct, 5, 90) / 100;
+      h = Math.max(sp, h - notesH - sp);
+    }
+    let nx = Math.floor(w / sp + 1e-6), ny = Math.floor(h / sp + 1e-6);
+    if (S.snap !== 'off') {
+      // Even number of blocks when numbering from the center, so the center lands on a (major) line.
+      const step = (S.snap === 'major' && N > 0 ? N : 1) * (fromCenter ? 2 : 1);
+      if (nx >= step) nx = Math.floor(nx / step) * step;
+      if (ny >= step) ny = Math.floor(ny / step) * step;
+      // With a notes area, the grid sits at the top and the notes take all the space left below it.
+      x0 += (w - nx * sp) / 2;
+      if (!S.notes) y0 += (h - ny * sp) / 2;
+      w = nx * sp; h = ny * sp;
+    }
+    if (S.notes) notesH = areaBottom - (y0 + h) - sp;
+    // Grid-line indices (j counts down from the top) of the center, where the axes cross,
+    // and of the point the edge numbers count from.
+    const cx = Math.round(w / 2 / sp), cy = Math.round(h / 2 / sp);
+    const [ex, ey] = S.origin === 'center' ? [cx, cy] : S.origin === 'tl' ? [0, 0] : [0, ny];
+    // Major lines are counted from the axes, else from where the edge numbers start, else the top-left.
+    const [rx, ry] = S.axes ? [cx, cy] : S.edgeLabels ? [ex, ey] : [0, 0];
+    const X = (i) => x0 + i * sp, Y = (j) => y0 + j * sp;
+
+    if (pat === 'square') {
+      for (let i = 0; i <= nx; i++) {
+        const d = `M${f(X(i))} ${f(y0)}V${f(y0 + h)}`;
+        if (isMajor(i - rx)) major += d; else minor += d;
+      }
+      for (let j = 0; j <= ny; j++) {
+        const d = `M${f(x0)} ${f(Y(j))}H${f(x0 + w)}`;
+        if (isMajor(j - ry)) major += d; else minor += d;
+      }
+      info = `${nx} × ${ny} squares`;
+    } else {
+      for (let i = 0; i <= nx; i++) {
+        for (let j = 0; j <= ny; j++) {
+          const d = `M${f(X(i))} ${f(Y(j))}h0.001`;
+          if (isMajor(i - rx) && isMajor(j - ry)) major += d; else minor += d;
+        }
+      }
+      info = `${nx + 1} × ${ny + 1} dots`;
+    }
+    if (N > 0 && nx % N === 0 && ny % N === 0) info += ` (${nx / N} × ${ny / N} major)`;
+    desc.push(pat === 'square' ? `${len(sp)} squares` : `Dots every ${len(sp)}`);
+    if (N > 0) desc.push(`major every ${N} (${len(N * sp)})`);
+    desc.push(pat === 'square' ? `${nx} × ${ny} cells` : `${nx + 1} × ${ny + 1} dots`);
+    if (labeled && +S.labelScale && +S.labelScale !== 1) desc.push(`1 cell = ${+S.labelScale}`);
+
+    if (S.notes) {
+      // Notes lines are bottom-aligned in the reserved strip and match the grid's width.
+      const ns = Math.max(1, S.notesSpacing);
+      let n = 0, d = '';
+      for (let y = areaBottom; y > areaBottom - notesH + ns * 0.5; y -= ns, n++) {
+        d += `M${f(x0)} ${f(y)}H${f(x0 + w)}`;
+      }
+      extra += `<path d="${d}" fill="none" stroke="${S.minorColor}" stroke-width="${Math.max(S.minorWeight, 0.15)}"/>`;
+      info += ` · ${n} note lines`;
+      desc.push(`${n} note lines`);
+      boxBottom = areaBottom;
+    }
+
+    if (S.axes) {
+      extra += `<path d="M${f(X(cx))} ${f(y0)}V${f(y0 + h)}M${f(x0)} ${f(Y(cy))}H${f(x0 + w)}" stroke="${S.axisColor}" stroke-width="${S.axisWeight}"/>`;
+    }
+    if (labeled) {
+      const L = labelStep;
+      const on = (i, r) => ((i - r) % L + L) % L === 0;
+      // Labels sit inside the cell next to their line (right of vertical lines, above horizontal ones)
+      // so the text doesn't cross any grid line.
+      const bandX = fs * 2.2;  // keep top/bottom labels clear of the left/right label columns
+      const bandY = fs * 1.6;  // keep left/right labels clear of the top/bottom label rows
+      // Each label sits on the side of its line facing away from its origin (o): right of / above
+      // the line on the far side, left of / below it on the near side.
+      const xLabel = (i, y, o) => {
+        if (i < o) text(X(i) - pad, y, fmt(i - o), 'end');
+        else text(X(i) + pad, y, fmt(i - o), 'start');
+      };
+      const yLabel = (j, x, anchor, o) => text(x, j > o ? Y(j) + below : Y(j) - pad, fmt(o - j), anchor);
+      // Labels on the outer side of their line need extra room before the edge.
+      const roomX = (i, o) => (i < o ? bandX + fs * 1.6 : bandX);
+      const roomY = (j, o) => (j > o ? bandY + fs * 1.1 : bandY);
+
+      if (S.edgeLabels) {
+        for (let i = 0; i <= nx; i++) {
+          const x = X(i);
+          if (!on(i, ex) || x - x0 < roomX(i, ex) || x0 + w - x < bandX) continue;
+          xLabel(i, y0 + below, ex);
+          xLabel(i, y0 + h - pad, ex);
+        }
+        for (let j = 0; j <= ny; j++) {
+          const y = Y(j);
+          if (!on(j, ey) || y - y0 < bandY || y0 + h - y < roomY(j, ey)) continue;
+          yLabel(j, x0 + pad, 'start', ey);
+          yLabel(j, x0 + w - pad, 'end', ey);
+        }
+      }
+      if (S.axes) {
+        const ax = X(cx), ay = Y(cy);
+        const skipX = S.edgeLabels ? bandX * 1.3 : fs;
+        const skipY = S.edgeLabels ? bandY * 1.3 : fs * 0.6;
+        for (let i = 0; i <= nx; i++) {
+          const x = X(i);
+          if (i === cx || !on(i, cx) || x - x0 < skipX + (i < cx ? fs * 1.6 : 0) || x0 + w - x < skipX) continue;
+          xLabel(i, ay + below, cx);
+        }
+        for (let j = 0; j <= ny; j++) {
+          const y = Y(j);
+          if (j === cy || !on(j, cy) || y - y0 < skipY || y0 + h - y < skipY + (j > cy ? fs * 1.1 : 0)) continue;
+          yLabel(j, ax - pad, 'end', cy);
+        }
+        text(ax - pad, ay + below, '0', 'end');
+      }
+    }
+  } else if (pat === 'ruled') {
+    const ny = Math.floor(h / sp + 1e-6);
+    if (S.center) { y0 += (h - ny * sp) / 2; h = ny * sp; }
+    for (let j = 0; j <= ny; j++) minor += `M${f(x0)} ${f(y0 + j * sp)}H${f(x0 + w)}`;
+    if (S.marginLine && S.marginAt > 0 && S.marginAt < w) {
+      extra += `<path d="M${f(x0 + S.marginAt)} ${f(y0)}V${f(y0 + h)}" stroke="#e07a7a" stroke-width="${S.majorWeight}"/>`;
+    }
+    info = `${ny + 1} lines`;
+    desc.push(`Lines every ${len(sp)}`, `${ny + 1} lines`);
+  } else if (pat === 'staff') {
+    const staffH = 4 * sp, gap = Math.max(0, S.staffGap);
+    const n = Math.max(1, Math.floor((h + gap) / (staffH + gap) + 1e-6));
+    const used = n * staffH + (n - 1) * gap;
+    if (S.center) y0 += (h - used) / 2;
+    h = used;
+    for (let s = 0; s < n; s++) {
+      const top = y0 + s * (staffH + gap);
+      for (let l = 0; l < 5; l++) minor += `M${f(x0)} ${f(top + l * sp)}H${f(x0 + w)}`;
+    }
+    info = `${n} staves`;
+    desc.push(`Music staff, ${len(sp)} line spacing`, `${n} staves`);
+  } else if (pat === 'isometric') {
+    clip = true;
+    const p = sp * Math.sqrt(3) / 2;
+    const o = S.center ? [x0 + w / 2, y0 + h / 2] : [x0, y0];
+    const L = Math.hypot(w, h) + sp;
+    const c30 = Math.cos(Math.PI / 6), s30 = Math.sin(Math.PI / 6);
+    const corners = [[x0, y0], [x0 + w, y0], [x0, y0 + h], [x0 + w, y0 + h]];
+    for (const [dx, dy] of [[0, 1], [c30, s30], [c30, -s30]]) {
+      const nx = -dy, ny = dx;
+      const proj = corners.map(([cx, cy]) => (cx - o[0]) * nx + (cy - o[1]) * ny);
+      const k0 = Math.ceil(Math.min(...proj) / p - 1e-6), k1 = Math.floor(Math.max(...proj) / p + 1e-6);
+      for (let k = k0; k <= k1; k++) {
+        const ax = o[0] + k * p * nx, ay = o[1] + k * p * ny;
+        const d = `M${f(ax - L * dx)} ${f(ay - L * dy)}L${f(ax + L * dx)} ${f(ay + L * dy)}`;
+        if (isMajor(Math.abs(k))) major += d; else minor += d;
+      }
+    }
+    desc.push(`Isometric, ${len(sp)} triangles`);
+    if (N > 0) desc.push(`major every ${N} (${len(N * sp)})`);
+  } else if (pat === 'isodots') {
+    // Same lattice as the isometric lines: columns √3/2·s apart, alternate columns shifted by s/2.
+    const p = sp * Math.sqrt(3) / 2;
+    const o = S.center ? [x0 + w / 2, y0 + h / 2] : [x0, y0];
+    const k0 = Math.ceil((x0 - o[0]) / p - 1e-6), k1 = Math.floor((x0 + w - o[0]) / p + 1e-6);
+    let count = 0;
+    for (let k = k0; k <= k1; k++) {
+      const x = o[0] + k * p, shift = Math.abs(k) % 2 ? sp / 2 : 0;
+      const m0 = Math.ceil((y0 - o[1] - shift) / sp - 1e-6), m1 = Math.floor((y0 + h - o[1] - shift) / sp + 1e-6);
+      for (let m = m0; m <= m1; m++, count++) minor += `M${f(x)} ${f(o[1] + shift + m * sp)}h0.001`;
+    }
+    info = `${count} dots`;
+    desc.push(`Isometric dots every ${len(sp)}`);
+  } else if (pat === 'hex') {
+    clip = true;
+    const a = sp, dx = Math.sqrt(3) * a, dy = 1.5 * a;
+    const o = S.center ? [x0 + w / 2, y0 + h / 2] : [x0 + dx / 2, y0 + a];
+    const r0 = Math.floor((y0 - o[1]) / dy) - 1, r1 = Math.ceil((y0 + h - o[1]) / dy) + 1;
+    const c0 = Math.floor((x0 - o[0]) / dx) - 1, c1 = Math.ceil((x0 + w - o[0]) / dx) + 1;
+    const ang = [-90, -30, 30, 90, 150, 210].map((d) => (d * Math.PI) / 180);
+    for (let r = r0; r <= r1; r++) {
+      const cy = o[1] + r * dy, shift = Math.abs(r) % 2 ? dx / 2 : 0;
+      for (let c = c0; c <= c1; c++) {
+        const cx = o[0] + c * dx + shift;
+        minor += ang.map((t, i) => `${i ? 'L' : 'M'}${f(cx + a * Math.cos(t))} ${f(cy + a * Math.sin(t))}`).join('') + 'Z';
+      }
+    }
+    desc.push(`Hexagons, ${len(sp)} sides`);
+  } else if (pat === 'polar') {
+    const cx = x0 + w / 2, cy = y0 + h / 2;
+    const n = Math.max(1, Math.floor(Math.min(w, h) / 2 / sp + 1e-6)), R = n * sp;
+    for (let k = 1; k <= n; k++) {
+      const r = k * sp;
+      const d = `M${f(cx + r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx - r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx + r)} ${f(cy)}`;
+      if (isMajor(k)) major += d; else minor += d;
+    }
+    const step = clamp(S.polarStep, 1, 90), majA = Math.max(0, +S.polarMajor || 0);
+    const rays = Math.round(360 / step);
+    const onMult = (a, m) => m > 0 && Math.abs(a / m - Math.round(a / m)) < 1e-6;
+    // Minor rays stop short of the center, where they would crowd together.
+    const inner = Math.min(R, sp * (N || 1));
+    for (let t = 0; t < rays; t++) {
+      const a = t * step, rad = (a * Math.PI) / 180, big = onMult(a, majA);
+      const r0 = big ? 0 : inner;
+      const d = `M${f(cx + r0 * Math.cos(rad))} ${f(cy - r0 * Math.sin(rad))}L${f(cx + R * Math.cos(rad))} ${f(cy - R * Math.sin(rad))}`;
+      if (big) major += d; else minor += d;
+    }
+    info = `${n} rings · ${rays} rays`;
+    desc.push(`Polar, rings every ${len(sp)}`, `rays every ${+step.toFixed(2)}°`, `${n} rings`);
+    if (S.edgeLabels) {
+      // Angle labels just inside the outer ring, nudged counter-clockwise off their ray.
+      const every = step <= 30 && onMult(30, step) ? 30 : step;
+      const r = sp >= fs * 2 ? R - sp / 2 : R - fs * 1.4;
+      for (let t = 0; t < rays; t++) {
+        const a = t * step;
+        if (!onMult(a, every) || r <= 0) continue;
+        const rad = (a * Math.PI) / 180 + (fs * 1.3) / r;
+        text(cx + r * Math.cos(rad), cy - r * Math.sin(rad) + fs * 0.36, `${+a.toFixed(2)}°`, 'middle');
+      }
+      // Radius labels along the 0° ray, inside each ring and above the ray.
+      for (let k = labelStep; k < n; k += labelStep) text(cx + k * sp - pad, cy - pad, fmt(k), 'end');
+    }
+    // From here on the "grid" is the square around the outer ring (border, description).
+    x0 = cx - R; y0 = cy - R; w = h = 2 * R;
+  } else if (pat === 'log') {
+    const cycles = (v) => Math.round(clamp(v, 0, 10));
+    const nX = cycles(S.logX), nY = cycles(S.logY);
+    // Linear axes use whole (major) cells, centered; log axes fill the available length.
+    const fitLinear = (len) => {
+      let n = Math.max(1, Math.floor(len / sp + 1e-6));
+      const st = N > 0 && n >= N ? N : 1;
+      return Math.floor(n / st) * st;
+    };
+    if (!nX) { const n = fitLinear(w); x0 += (w - n * sp) / 2; w = n * sp; }
+    if (!nY) { const n = fitLinear(h); y0 += (h - n * sp) / 2; h = n * sp; }
+    // Ticks as [fraction 0..1 along the axis, tier, label or null].
+    const ticks = (n, len) => {
+      const out = [];
+      if (n) {
+        for (let c = 0; c < n; c++) {
+          for (const [v, tier] of LOG_SUBS) {
+            out.push([(c + Math.log10(v)) / n, tier, Number.isInteger(v) ? String(v) : null]);
+          }
+        }
+        out.push([1, 'major', '1']);
+      } else {
+        const m = Math.round(len / sp);
+        for (let i = 0; i <= m; i++) out.push([i / m, isMajor(i) ? 'major' : 'minor', i % labelStep ? null : fmt(i)]);
+      }
+      return out;
+    };
+    const add = (tier, d) => { if (tier === 'major') major += d; else if (tier === 'mid') mid += d; else minor += d; };
+    const tx = ticks(nX, w), ty = ticks(nY, h);
+    for (const [t, tier] of tx) add(tier, `M${f(x0 + t * w)} ${f(y0)}V${f(y0 + h)}`);
+    for (const [t, tier] of ty) add(tier, `M${f(x0)} ${f(y0 + h - t * h)}H${f(x0 + w)}`);
+    const axisName = (n) => (n ? `${n}-cycle log` : 'linear');
+    info = `${axisName(nX)} × ${axisName(nY)}`;
+    const axisDesc = (n) => (n ? `${n} log cycles` : `linear, ${len(sp)} cells`);
+    desc.push(`Horizontal: ${axisDesc(nX)}`, `vertical: ${axisDesc(nY)}`);
+    if (S.edgeLabels) {
+      // Skip labels that would run into the previous one (dense ends of small cycles).
+      let last = -Infinity;
+      for (const [t, , s] of tx) {
+        const x = x0 + t * w;
+        if (s === null || x - last < fs * 1.2 || x0 + w - x < fs * 1.2) continue;
+        text(x + pad, y0 + h - pad, s, 'start');
+        last = x;
+      }
+      last = Infinity;
+      for (const [t, , s] of ty) {
+        const y = y0 + h - t * h;
+        if (s === null || last - y < fs * 1.2 || y0 + h - y < fs * 1.6 || y - y0 < fs) continue;
+        text(x0 + pad, y - pad, s, 'start');
+        last = y;
+      }
+    }
+  }
+
+  if (S.border) {
+    extra += `<rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}" fill="none" stroke="${S.majorColor}" stroke-width="${S.majorWeight}"/>`;
+  }
+  const caption = [...desc, String(S.capText || '').trim()].filter(Boolean).join('  ·  ');
+  if (S.capTop || S.capBottom || S.capLeft || S.capRight) {
+    const esc = caption.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const gap = fs * 0.5, bottom = boxBottom ?? y0 + h;
+    const mx = x0 + w / 2, my = (y0 + bottom) / 2;
+    // Rotated text on the sides reads bottom-to-top on the left and top-to-bottom on the right,
+    // with the letters' tops facing away from the grid.
+    const put = (x, y, rot) => {
+      labels += `<text transform="translate(${f(x)} ${f(y)})${rot ? ` rotate(${rot})` : ''}" text-anchor="middle">${esc}</text>`;
+    };
+    if (S.capTop) put(mx, y0 - gap);
+    if (S.capBottom) put(mx, bottom + gap + fs * 0.72);
+    if (S.capLeft) put(x0 - gap, my, -90);
+    if (S.capRight) put(x0 + w + gap, my, 90);
+  }
+  if (labels) {
+    labels = `<g font-family="Helvetica, Arial, sans-serif" font-size="${f(fs)}" fill="${S.labelColor}">${labels}</g>`;
+  }
+
+  const dots = pat === 'dots' || pat === 'isodots';
+  const minorW = dots ? S.dotSize : S.minorWeight;
+  const majorW = dots ? S.dotSize * 1.8 : S.majorWeight;
+  const content =
+    `<g fill="none" stroke-linecap="${dots ? 'round' : 'butt'}" stroke-linejoin="round"${clip ? ' clip-path="url(#area)"' : ''}>` +
+    (minor ? `<path d="${minor}" stroke="${S.minorColor}" stroke-width="${minorW}"/>` : '') +
+    (mid ? `<path d="${mid}" stroke="${S.majorColor}" stroke-width="${S.minorWeight}"/>` : '') +
+    (major ? `<path d="${major}" stroke="${S.majorColor}" stroke-width="${majorW}"/>` : '') +
+    `</g>${extra}${labels}`;
+  const scaled = kx !== 1 || ky !== 1;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${H}mm" viewBox="0 0 ${W} ${H}">` +
+    (clip ? `<defs><clipPath id="area"><rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(h)}"/></clipPath></defs>` : '') +
+    `<rect width="${W}" height="${H}" fill="#fff"/>` +
+    (scaled
+      ? `<g transform="matrix(${+kx.toFixed(6)} 0 0 ${+ky.toFixed(6)} ${f((W / 2) * (1 - kx))} ${f((H / 2) * (1 - ky))})">${content}</g>`
+      : content) +
+    `</svg>`;
+
+  const name = S.paper === 'Custom' ? `${f(W)} × ${f(H)} mm` : `${S.paper} ${S.orient}`;
+  const cal = S.calib ? `calibrated for ${+S.scaleX}% × ${+S.scaleY}%` : '';
+  return { svg, W, H, caption, info: [name, info, cal].filter(Boolean).join(' · ') };
+}
+
+// ---- Preview & zoom ----
+const ZOOMS = [1, 1.5, 2, 3, 4, 6, 8];
+let zoom = 1;
+
+function fit() {
+  const svg = $('#sheet svg');
+  if (!svg) return;
+  const [W, H] = pageSize();
+  const stage = $('#stage');
+  const scale = Math.min(stage.clientWidth / W, stage.clientHeight / H) * zoom;
+  svg.style.width = `${Math.floor(W * scale) - 2}px`;
+  svg.style.height = `${Math.floor(H * scale) - 2}px`;
+  $('#zoomLabel').textContent = zoom === 1 ? 'Fit' : `${zoom}×`;
+}
+
+function setZoom(z) {
+  const stage = $('#stage');
+  // Keep the point at the middle of the view in place while zooming.
+  const rx = (stage.scrollLeft + stage.clientWidth / 2) / stage.scrollWidth;
+  const ry = (stage.scrollTop + stage.clientHeight / 2) / stage.scrollHeight;
+  zoom = z;
+  fit();
+  stage.scrollLeft = rx * stage.scrollWidth - stage.clientWidth / 2;
+  stage.scrollTop = ry * stage.scrollHeight - stage.clientHeight / 2;
+}
+function stepZoom(dir) {
+  const i = ZOOMS.indexOf(zoom);
+  setZoom(ZOOMS[clamp(i + dir, 0, ZOOMS.length - 1)]);
+}
+
+function render() {
+  const { svg, W, H, info, caption } = build();
+  $('#capPreview').textContent = caption;
+  $('#sheet').innerHTML = svg;
+  $('#info').textContent = info;
+  $('#page-style').textContent =
+    `@page { size: ${W}mm ${H}mm; margin: 0; }` +
+    `@media print { #sheet svg { width: ${W}mm !important; height: ${H}mm !important; } }`;
+  fit();
+}
+
+function update() { syncInputs(); render(); save(); }
+
+document.addEventListener('input', (e) => {
+  const el = e.target, k = el.dataset && el.dataset.key;
+  if (!k) return;
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.type === 'radio') { if (!el.checked) return; v = el.value; }
+  else if (el.type === 'number') {
+    v = parseFloat(el.value);
+    if (!isFinite(v)) return;
+    if (LEN.has(k)) v *= unitFactor();
+  } else v = el.value;
+  S[k] = v;
+  if (k === 'marginLinked' && !v) S.marginT = S.marginR = S.marginB = S.marginL = S.margin;
+  // Re-sync on anything but typing in a text or number field, which would fight the cursor.
+  if (el.type !== 'number' && el.type !== 'text') syncInputs();
+  render();
+  save();
+});
+
+// ---- Presets ----
+function presetValues() {
+  const out = {};
+  for (const k in S) if (!CALIB_KEYS.includes(k)) out[k] = S[k];
+  return out;
+}
+function applyPreset(values) {
+  const keep = {};
+  CALIB_KEYS.forEach((k) => { keep[k] = S[k]; });
+  S = { ...S, ...values, ...keep };
+  update();
+}
+
+const presetBox = $('#presets');
+PRESETS.forEach(([label, values]) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  b.addEventListener('click', () => applyPreset(values));
+  presetBox.appendChild(b);
+});
+
+function loadUserPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESET_STORE)) || []; } catch (e) { return []; }
+}
+function saveUserPresets(list) {
+  try { localStorage.setItem(PRESET_STORE, JSON.stringify(list)); } catch (e) {}
+}
+function renderUserPresets() {
+  summarize();
+  const box = $('#userPresets');
+  const list = loadUserPresets();
+  box.innerHTML = '';
+  if (!list.length) {
+    box.innerHTML = '<span class="empty">None saved yet.</span>';
+    return;
+  }
+  list.forEach(({ name, values }) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    const use = document.createElement('button');
+    use.type = 'button';
+    use.textContent = name;
+    use.addEventListener('click', () => applyPreset(values));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'x';
+    del.textContent = '×';
+    del.setAttribute('aria-label', `Delete preset ${name}`);
+    del.addEventListener('click', () => {
+      saveUserPresets(loadUserPresets().filter((p) => p.name !== name));
+      renderUserPresets();
+    });
+    chip.append(use, del);
+    box.appendChild(chip);
+  });
+}
+$('#savePreset').addEventListener('click', () => {
+  const input = $('#presetName');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  const list = loadUserPresets().filter((p) => p.name !== name);
+  list.push({ name, values: presetValues() });
+  saveUserPresets(list);
+  input.value = '';
+  renderUserPresets();
+});
+$('#presetName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#savePreset').click(); });
+
+// Share links pack the settings that differ from the defaults into bytes, then URL-safe base64.
+// Each changed setting is a field number followed by its value: choices are an index into a fixed
+// list, on/off settings need no value (present = flipped from the default), numbers are a varint
+// with their decimal places folded in, colors are 3 bytes. Only append to these lists, never reorder.
+const LINK_VERSION = 1;
+const CHOICES = {
+  paper: [...Object.keys(PAPERS), 'Custom'], orient: ['portrait', 'landscape'], unit: ['mm', 'in'],
+  pattern: ['square', 'dots', 'isometric', 'isodots', 'hex', 'polar', 'log', 'ruled', 'staff'],
+  snap: ['major', 'cells', 'off'], origin: ['center', 'bl', 'tl'],
+};
+const LINK_FIELDS = [
+  'theme', 'paper', 'orient', 'unit', 'customW', 'customH',
+  'marginLinked', 'margin', 'marginT', 'marginR', 'marginB', 'marginL',
+  'pattern', 'spacing', 'majorEvery', 'dotSize', 'marginLine', 'marginAt',
+  'snap', 'center', 'border', 'notes', 'notesPct', 'notesSpacing',
+  'logX', 'logY', 'polarStep', 'polarMajor', 'staffGap',
+  'minorColor', 'minorWeight', 'majorColor', 'majorWeight',
+  'axes', 'edgeLabels', 'origin', 'labelEvery', 'labelScale',
+  'labelColor', 'labelSize', 'axisColor', 'axisWeight',
+  'capTop', 'capBottom', 'capLeft', 'capRight', 'capText',
+];
+const THEME_KEYS = ['minorColor', 'majorColor', 'axisColor', 'labelColor'];
+const fieldType = (k) => {
+  if (k === 'theme') return 'theme';
+  if (CHOICES[k]) return 'choice';
+  const d = DEFAULTS[k];
+  if (typeof d === 'boolean') return 'bool';
+  if (typeof d === 'number') return 'num';
+  return d.startsWith('#') ? 'color' : 'text';
+};
+
+function encodeSettings() {
+  const out = [LINK_VERSION];
+  const varint = (n) => {
+    do { let b = n % 128; n = Math.floor(n / 128); out.push(n ? b | 128 : b); } while (n);
+  };
+  const theme = currentTheme();
+  LINK_FIELDS.forEach((k, idx) => {
+    const type = fieldType(k);
+    if (type === 'theme') {
+      if (theme && !THEME_KEYS.every((c) => S[c] === DEFAULTS[c])) { out.push(idx); varint(THEMES.indexOf(theme)); }
+      return;
+    }
+    const v = S[k];
+    if (v === DEFAULTS[k] || (theme && THEME_KEYS.includes(k))) return;
+    if (type === 'choice') {
+      const i = CHOICES[k].indexOf(v);
+      if (i >= 0) { out.push(idx); varint(i); }
+    } else if (type === 'bool') {
+      out.push(idx);
+    } else if (type === 'num') {
+      // Smallest number of decimals (0-6) that represents v, then zigzag for negatives.
+      let d = 0;
+      while (d < 6 && Math.abs(v * 10 ** d - Math.round(v * 10 ** d)) > 1e-7) d++;
+      const m = Math.round(v * 10 ** d);
+      out.push(idx); varint((m >= 0 ? 2 * m : -2 * m - 1) * 8 + d);
+    } else if (type === 'color') {
+      out.push(idx, ...[1, 3, 5].map((i) => parseInt(v.slice(i, i + 2), 16)));
+    } else {
+      const bytes = new TextEncoder().encode(v);
+      out.push(idx); varint(bytes.length); out.push(...bytes);
+    }
+  });
+  return btoa(String.fromCharCode(...out)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodeSettings(str) {
+  const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  if (bytes[0] !== LINK_VERSION) return null;
+  let pos = 1;
+  const next = () => { if (pos >= bytes.length) throw new Error('truncated'); return bytes[pos++]; };
+  const varint = () => {
+    let n = 0, mul = 1, b;
+    do { b = next(); n += (b & 127) * mul; mul *= 128; } while (b & 128);
+    return n;
+  };
+  const values = { ...DEFAULTS };
+  while (pos < bytes.length) {
+    const k = LINK_FIELDS[next()];
+    if (!k) throw new Error('unknown field');
+    const type = fieldType(k);
+    if (type === 'theme') {
+      const theme = THEMES[varint()];
+      if (theme) THEME_KEYS.forEach((c, i) => { values[c] = theme[i + 1]; });
+    } else if (type === 'choice') {
+      const v = CHOICES[k][varint()];
+      if (v !== undefined) values[k] = v;
+    } else if (type === 'bool') {
+      values[k] = !DEFAULTS[k];
+    } else if (type === 'num') {
+      const n = varint(), d = n % 8, z = Math.floor(n / 8);
+      values[k] = (z % 2 ? -(z + 1) / 2 : z / 2) / 10 ** d;
+    } else if (type === 'color') {
+      values[k] = '#' + [next(), next(), next()].map((b) => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      const n = varint();
+      values[k] = new TextDecoder().decode(bytes.slice(pos, pos + n));
+      pos += n;
+    }
+  }
+  return values;
+}
+
+function readHash() {
+  const raw = location.hash.slice(1);
+  if (!/^[\w-]+$/.test(raw)) return;
+  let values = null;
+  try { values = decodeSettings(raw); } catch (e) {}
+  if (!values) return;
+  applyPreset(values);
+  history.replaceState(null, '', location.pathname + location.search);
+}
+$('#shareLink').addEventListener('click', async () => {
+  const url = `${location.href.split('#')[0]}#${encodeSettings()}`;
+  const btn = $('#shareLink');
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = 'Link copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy share link'; }, 2000);
+  } catch (e) {
+    window.prompt('Copy this link:', url);
+  }
+});
+
+// ---- Pattern tiles ----
+const ICONS = (() => {
+  const r3 = Math.sqrt(3);
+  const lines = (d) => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
+  const dots = (pts, size = 3) => `<path d="${pts.map(([x, y]) => `M${f(x)} ${f(y)}h0.01`).join('')}" stroke="currentColor" stroke-width="${size}" stroke-linecap="round"/>`;
+  // Triangular lattice through (16,16): columns 10 apart, side ≈ 11.55.
+  const s = 20 / r3, isoD = [];
+  for (let n = -2; n <= 2; n++) {
+    isoD.push(`M0 ${f(16 - 16 / r3 + n * s)}L32 ${f(16 + 16 / r3 + n * s)}`);
+    isoD.push(`M0 ${f(16 + 16 / r3 + n * s)}L32 ${f(16 - 16 / r3 + n * s)}`);
+  }
+  const isoPts = [];
+  for (const k of [-1, 0, 1]) for (let m = -2; m <= 2; m++) isoPts.push([16 + k * 10, 16 + m * s + (k ? s / 2 : 0)]);
+  const hex = (cx, cy, a) => [-90, -30, 30, 90, 150, 210]
+    .map((d, i) => `${i ? 'L' : 'M'}${f(cx + a * Math.cos(d * Math.PI / 180))} ${f(cy + a * Math.sin(d * Math.PI / 180))}`).join('') + 'Z';
+  const a = 7, hx = a * r3;
+  const logPos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => 4 + 24 * Math.log10(v));
+  const grid3 = [8, 16, 24];
+  return {
+    square: lines('M4 4H28V28H4ZM12 4V28M20 4V28M4 12H28M4 20H28'),
+    dots: dots(grid3.flatMap((x) => grid3.map((y) => [x, y]))),
+    isometric: lines(`M6 0V32M16 0V32M26 0V32${isoD.join('')}`),
+    isodots: dots(isoPts.filter(([, y]) => y > 1 && y < 31)),
+    hex: lines(hex(16, 16, a) + hex(16 - hx, 16, a) + hex(16 + hx, 16, a) + hex(16 - hx / 2, 16 - 1.5 * a, a) +
+      hex(16 + hx / 2, 16 - 1.5 * a, a) + hex(16 - hx / 2, 16 + 1.5 * a, a) + hex(16 + hx / 2, 16 + 1.5 * a, a)),
+    polar: lines('M21 16A5 5 0 1 0 11 16A5 5 0 1 0 21 16M27 16A11 11 0 1 0 5 16A11 11 0 1 0 27 16M2 16H30M16 2V30M7 7L25 25M25 7L7 25'),
+    log: lines(`M4 4H28V28H4Z${logPos.map((x) => `M${f(x)} 4V28`).join('')}${logPos.map((y) => `M4 ${f(32 - y)}H28`).join('')}`),
+    ruled: lines('M3 8H29M3 13H29M3 18H29M3 23H29M3 28H29M9 3V30'),
+    staff: lines('M3 5H29M3 8H29M3 11H29M3 14H29M3 17H29M3 22H29M3 25H29M3 28H29'),
+  };
+})();
+const TILE_NAMES = {
+  square: 'Square', dots: 'Dots', isometric: 'Isometric', isodots: 'Iso dots', hex: 'Hex',
+  polar: 'Polar', log: 'Log', ruled: 'Ruled', staff: 'Staff',
+};
+$('#tiles').innerHTML = Object.entries(TILE_NAMES).map(([key, name]) =>
+  `<label><input type="radio" name="pattern" value="${key}" data-key="pattern">` +
+  `<span><svg viewBox="0 0 32 32" aria-hidden="true">${ICONS[key]}</svg>${name}</span></label>`).join('');
+
+// ---- Collapsible sections remember whether they're open ----
+const SECTION_STORE = 'graphpaper-sections';
+let openSections = {};
+try { openSections = JSON.parse(localStorage.getItem(SECTION_STORE)) || {}; } catch (e) {}
+document.querySelectorAll('details.sec').forEach((d) => {
+  if (openSections[d.dataset.sec]) d.open = true;
+  d.addEventListener('toggle', () => {
+    openSections[d.dataset.sec] = d.open;
+    try { localStorage.setItem(SECTION_STORE, JSON.stringify(openSections)); } catch (e) {}
+  });
+});
+
+
+// ---- Color themes ----
+const swatchBox = $('#swatches');
+THEMES.forEach(([name, minor, major, axis, label]) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.title = name;
+  b.setAttribute('aria-label', `${name} lines`);
+  b.style.background = `linear-gradient(135deg, ${minor} 50%, ${major} 50%)`;
+  b.addEventListener('click', () => {
+    Object.assign(S, { minorColor: minor, majorColor: major, axisColor: axis, labelColor: label });
+    update();
+  });
+  swatchBox.appendChild(b);
+});
+
+// ---- Calibration from a measured printout ----
+$('#calcScale').addEventListener('click', () => {
+  const msg = $('#calcMsg');
+  const n = Math.max(1, Math.round(S.measN) || 1);
+  const box = Math.max(0.5, S.spacing) * (S.measKind === 'major' ? Math.max(1, Math.round(S.majorEvery) || 1) : 1);
+  const expected = n * box;
+  if (!(S.measLen > 0)) { msg.textContent = 'Enter the length you measured.'; return; }
+  const ratio = S.measLen / expected;
+  if (ratio < 0.5 || ratio > 1.5) {
+    const u = unitFactor();
+    msg.textContent = `${n} boxes should be about ${+(expected / u).toFixed(3)} ${S.unit}; check the count and box type.`;
+    return;
+  }
+  // The page was printed with the current correction (if any), so fold it back in.
+  const next = (k) => +(ratio * (S.calib ? clamp(S[k], 50, 150) : 100)).toFixed(2);
+  if (S.measAxis !== 'v') S.scaleX = next('scaleX');
+  if (S.measAxis !== 'h') S.scaleY = next('scaleY');
+  S.calib = true;
+  msg.textContent = `Printer prints at ${S.scaleX}% × ${S.scaleY}%. Correction is on.`;
+  update();
+});
+
+// ---- Output ----
+$('#print').addEventListener('click', () => window.print());
+$('#download').addEventListener('click', () => {
+  const { svg } = build();
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `graph-paper-${S.pattern}-${f(S.spacing)}mm.svg`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+document.querySelectorAll('[data-zoom]').forEach((b) => b.addEventListener('click', () => {
+  const z = b.dataset.zoom;
+  if (z === 'fit') setZoom(1); else stepZoom(z === 'in' ? 1 : -1);
+}));
+$('#stage').addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  stepZoom(e.deltaY < 0 ? 1 : -1);
+}, { passive: false });
+
+new ResizeObserver(() => fit()).observe($('#stage'));
+renderUserPresets();
+readHash();
+syncInputs();
+render();
+</script>
+</body>
+</html>
